@@ -1,7 +1,7 @@
 import os,json,sys
 
 class PoseDetector():
-	PROJ_MAIN_DIR = ".\\OpenPose_demo_1.0.1\\"		
+	PROJ_MAIN_DIR = ".\\"
 	
 	@staticmethod
 	def readFramePoints(individual_tag = 1,frame_name = None):
