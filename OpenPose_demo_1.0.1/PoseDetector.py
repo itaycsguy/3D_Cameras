@@ -1,10 +1,10 @@
 import os,json,sys
 
 class PoseDetector():
-	PROJ_MAIN_DIR = ".\\"
+	PROJ_MAIN_DIR = ""
 	
 	@staticmethod
-	def readFramePoints(individual_tag = 1,frame_name = None):
+	def readFramePoints(individual_tag=1,frame_name = None):
 		if individual_tag < 0:
 			print("> No individual number is attached.")
 			return None
@@ -12,8 +12,21 @@ class PoseDetector():
 			print("> No frame is attached.")
 			return None
 		content = list()
-		entry_directory = PoseDetector.PROJ_MAIN_DIR
-		directory = entry_directory + "\\output_values\\"
+		NEED_LOC_DIR = False
+		output_values_path = None
+		try:
+			output_values_path = os.environ['OUTPUT_VALUES']
+			if not output_values_path:
+				NEED_LOC_DIR = True
+				output_values_path = PoseDetector.PROJ_MAIN_DIR + "\\output_values"
+		except:
+				NEED_LOC_DIR = True
+				output_values_path = PoseDetector.PROJ_MAIN_DIR + "\\output_values"
+		if NEED_LOC_DIR:
+			if not os.path.exists(output_values_path):
+				print("> Output directory is not exist.")
+				sys.exit(4)
+		directory = output_values_path + "\\"	# PoseDetector.PROJ_MAIN_DIR + "\\output_values\\"
 		for file in os.listdir(directory):
 			file_full_name = file.strip()
 			try:
@@ -59,26 +72,42 @@ class PoseDetector():
 		return [nose_ratio,nose_ratio < 0.50]
 
 	@staticmethod
-	def detectFramePoints(individual_tag = 1,frame_path = None,percentage_output = True):
+	def detectFramePoints(individual_tag=1,frame_path=None,percentage_output=True):
 		if individual_tag < 0:
 			print("> No individual number is attached.")
 			return None
 		if not frame_path:
 			print("> No frame is attached.")
 			return None
-		frame_path = frame_path.split("\\")
-		frame_name = frame_path[len(frame_path) - 1]
-		frame_temp = ""
-		for c in frame_path[:(len(frame_path) - 1)]:
-			frame_temp = frame_temp + "\\" + c
-		frame_path = frame_temp + "\\"
-		entry_directory = PoseDetector.PROJ_MAIN_DIR
-		cmd = entry_directory + "\\bin\\OpenPoseDemo.exe " + \
+		frame_name_tokes = frame_path.split("\\")
+		frame_name = frame_name_tokes[len(frame_name_tokes) - 1]
+		full_path_without_frame_name_len = len(frame_path)-len(frame_name)
+		frame_path = frame_path[:full_path_without_frame_name_len]
+		output_values_path = None
+		NEED_LOC_DIR = False
+		try:
+			output_values_path = os.environ['OUTPUT_VALUES']
+			if not output_values_path:
+				NEED_LOC_DIR = True
+				output_values_path = PoseDetector.PROJ_MAIN_DIR + "\\output_values"
+		except:
+				NEED_LOC_DIR = True
+				output_values_path = PoseDetector.PROJ_MAIN_DIR + "\\output_values"
+		if NEED_LOC_DIR:
+			if not os.path.exists(output_values_path):
+				print("> Output directory is not exist.")
+				print("> Trying to create output directory...")
+				os.mkdir(output_values_path)
+				if not os.path.exists(output_values_path):
+					print("> Cannot create output directory.")
+					sys.exit(5)
+				else:
+					print("> Creation succeeded.")
+		cmd = PoseDetector.PROJ_MAIN_DIR + "\\bin\\OpenPoseDemo.exe " + \
 			   " --face " + \
                " --no_display " + \
-               " --image_dir " + str(entry_directory + frame_path) + \
-               " --write_keypoint_json " + entry_directory + "\\output_values\\"
-		#print(cmd)
+               " --image_dir " + str(frame_path) + \
+               " --write_keypoint_json " + output_values_path	# PoseDetector.PROJ_MAIN_DIR + "\\output_values\\"
 		os.system(cmd)	#takes 5 seconds to return
 		if frame_name != "*":
 			points = PoseDetector.readFramePoints(individual_tag,frame_name)
@@ -91,7 +120,7 @@ class PoseDetector():
 			
 			
 	@staticmethod
-	def get_face_keypoints(frame_name = None,main_dir = ""):
+	def get_face_keypoints(frame_name=None,main_dir=""):
 		if not frame_name:
 			print("> No frame is provided.")
 			return None
@@ -113,10 +142,38 @@ class PoseDetector():
 			
 
 if __name__ == "__main__":
+	out = False
+	try:
+		PoseDetector.PROJ_MAIN_DIR = os.environ['CUSTOM_OPEN_POSE']
+		if not os.path.exists(PoseDetector.PROJ_MAIN_DIR):
+			print("> OpenPose directory is not exist.")
+			sys.exit(6)
+	except:
+		print("> Cannot executing without 'CUSTOM_OPEN_POSE' environment variable definition.")
+		sys.exit(1)
 	name_arg = "*"
-	if len(sys.argv) >= 3:
-		name_arg = sys.argv[1] + "\\" + name_arg
-		PoseDetector.PROJ_MAIN_DIR = sys.argv[2]
+	if len(sys.argv) >= 2:
+		images_dir = PoseDetector.PROJ_MAIN_DIR + "\\" + sys.argv[1]
+		name_arg = images_dir + "\\" + name_arg
+		if not os.path.exists(images_dir):
+			print("> Images directory is not exist.")
+			sys.exit(7)
+	else:
+		try:
+			buffer_images_path = os.environ['IMAGES_BUFFER']
+			if buffer_images_path:
+				if not os.path.exists(buffer_images_path):
+					print("> 'IMAGES_BUFFER' environment variable directory is not exist.")
+					sys.exit(8)
+				name_arg = buffer_images_path + "\\" + name_arg
+			else:
+				print("> Cannot executing without 'IMAGES_BUFFER' environment variable definition or directory of images as parameter.")
+				sys.exit(2)
+		except:
+				print("> Cannot executing without 'IMAGES_BUFFER' environment variable definition or directory of images as parameter.")
+				sys.exit(3)
+	print("> Computing key-points...")
 	computed_solution = PoseDetector.detectFramePoints(frame_path=name_arg)
+	print("> Finished!")
 	if computed_solution != None:
 		print(">",computed_solution[0])
