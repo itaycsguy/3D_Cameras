@@ -1,2 +1,1 @@
-*** Extract OpenPose_demo_1.0.1.zip to OpenPose_demo_1.0.1 directory.
-no need to use that PoseDetector.py. you can idealy use the inner one into OpenPose_demo_1.0.1 directory.
+> Need to download to this directory the next directory over the link and unzip it: https://drive.google.com/file/d/17Ok4SfOXYMbD2lg86jIuHeoUVlLfnvQp/view?usp=sharing
